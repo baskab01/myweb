@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Secure Login</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- พื้นหลัง -->
+  <div class="bg"></div>
+  <div class="overlay"></div>
+
+  <!-- Login -->
+  <main class="login-container">
+
+    <div class="logo">
+      <div class="shield">◆</div>
+    </div>
+
+    <h1>WELCOME</h1>
+    <p class="subtitle">Secure Authentication System</p>
+
+    <form id="loginForm">
+
+      <label>USERNAME</label>
+      <input id="username" type="text" placeholder="Enter username" autocomplete="off">
+
+      <label>PASSWORD</label>
+      <div class="password-box">
+        <input id="password" type="password" placeholder="Enter password">
+        <span id="togglePassword">👁</span>
+      </div>
+
+      <button type="submit" id="loginBtn">
+        LOGIN
+      </button>
+
+      <p id="error"></p>
+
+    </form>
+
+    <div class="footer">
+      Restricted Access • System v1.0
+    </div>
+
+  </main>
+
+  <!-- Jumpscare -->
+  <div id="jumpscare">
+
+    <img src="ghost.png" alt="ghost">
+
+    <div class="scan"></div>
+
+  </div>
+
+  <!-- เสียง -->
+  <audio id="scream" preload="auto">
+    <source src="scream.mp3" type="audio/mpeg">
+  </audio>
+
+  <script src="js/script.js"></script>
+
+</body>
+</html>
