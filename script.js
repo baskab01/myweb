@@ -31,6 +31,7 @@ function toast(t){const x=document.querySelector("#toast");x.textContent=t;x.cla
 const box=t=>`<div class="gamebox">${t}</div>`;
 
 const games={
+dont(){document.querySelector("#gameContent").innerHTML=box(`<div class="center"><h2>🚫 ปุ่มที่ไม่ควรกด</h2><p class="sub">คุณถูกเตือนแล้วนะ...</p><div style="height:230px;position:relative" id="dontArea"><button id="dontBtn" class="primary" style="position:absolute;left:45%;top:45%" onclick="dontClick()">อย่ากด</button></div><div id="dontOut" class="result"></div></div>`)},
 npc(){document.querySelector("#gameContent").innerHTML=box(`<div class="center"><h2>🧠 NPC Scanner</h2><p class="sub">วางมือบนเมาส์ แล้วเตรียมรับผลการวิเคราะห์</p><div class="big">🧑‍💻</div><div class="progress"><div id="bar" class="bar"></div></div><div id="out" class="result">พร้อมสแกน</div><button class="primary" onclick="scanNPC()">เริ่มสแกน</button></div>`)},
 lie(){document.querySelector("#gameContent").innerHTML=box(`<h2>🕵️ เครื่องจับโกหก</h2><p class="sub">เลือกคำตอบที่คิดว่าเครื่องจะเชื่อ</p><div id="lieQ"></div>`);lieStep=0;showLie()},
 money(){document.querySelector("#gameContent").innerHTML=box(`<div class="center"><h2>💰 รับเงินฟรี</h2><p class="sub">ยินดีด้วย ระบบพบว่าคุณมีสิทธิ์รับเงิน</p><div class="money">฿999,999</div><p class="warn">*ขั้นตอนนี้เป็นเกมจำลอง ไม่มีการโอนเงินจริง</p><button class="primary" onclick="moneyStep(1)">ยืนยันรับเงิน</button></div>`)},
@@ -41,6 +42,16 @@ friend(){document.querySelector("#gameContent").innerHTML=box(`<div class="cente
 ai(){document.querySelector("#gameContent").innerHTML=box(`<h2>🤖 AI วิเคราะห์บุคลิก</h2><p class="sub">ตอบ 3 ข้อ แล้วรับผลวิเคราะห์</p><div id="aiQ"></div>`);aiStep=0;aiScore=0;showAI()},
 click(){startClickGame()}
 };
+
+let dontClicks=0;
+function dontClick(){
+  dontClicks++;
+  const b=document.querySelector("#dontBtn"),a=document.querySelector("#dontArea"),o=document.querySelector("#dontOut");
+  if(dontClicks<6){
+    b.style.left=Math.random()*80+"%"; b.style.top=Math.random()*80+"%";
+    b.textContent=["บอกว่าอย่ากดไง","หยุดก่อน","ยังจะกดอีก?","เอาจริงดิ","ครั้งสุดท้ายแล้วนะ"][dontClicks-1];
+  }else{a.innerHTML=`<div class="big">🗿</div>`;o.innerHTML=`<span class="danger">ยินดีด้วย คุณชนะปุ่ม</span><br><small>แต่เสียเวลาไปกับมันแล้วเรียบร้อย</small>`}
+}
 
 function scanNPC(){let b=document.querySelector("#bar"),o=document.querySelector("#out"),p=0;const timer=setInterval(()=>{p+=Math.random()*17;b.style.width=Math.min(p,100)+"%";o.textContent=p<100?"กำลังวิเคราะห์...":"กำลังสรุปผล...";if(p>=100){clearInterval(timer);setTimeout(()=>o.innerHTML=`ผลลัพธ์: <span class="danger">${Math.floor(70+Math.random()*30)}% NPC</span><br><small>ระบบตรวจพบพฤติกรรม “เปิดเว็บแล้วลืมว่ามาทำอะไร”</small>`,300)}},180)}
 
