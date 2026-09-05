@@ -41,3 +41,9 @@ input:focus{border-color:#7c5cff}.row{display:flex;gap:10px;flex-wrap:wrap;align
 #toast{position:fixed;left:50%;bottom:25px;transform:translate(-50%,20px);background:#fff;color:#111;padding:10px 16px;border-radius:10px;font-weight:700;opacity:0;pointer-events:none;transition:.2s;z-index:20}
 #toast.show{opacity:1;transform:translate(-50%,0)}
 @media(max-width:700px){.grid{grid-template-columns:1fr}.answers{grid-template-columns:1fr}.topbar{padding:0 5vw}.page{padding-top:35px}}
+
+body{overflow-x:hidden}
+.cat-modal{position:fixed;inset:0;background:#0009;display:flex;align-items:center;justify-content:center;padding:20px;z-index:10000;backdrop-filter:blur(5px)}
+.cat-card{width:min(430px,92vw);background:#111522;border:1px solid #3a4258;border-radius:20px;padding:24px;text-align:center;position:relative;box-shadow:0 25px 80px #000b}
+.cat-card h2{margin:0 0 7px}.cat-card p{color:var(--muted)}.cat-card img{display:block;width:min(300px,80vw);height:auto;margin:18px auto;border-radius:14px;border:1px solid #30384d;background:#0a0d15}.cat-close{position:absolute;right:12px;top:10px;border:0;background:none;color:#aeb6ca;font-size:30px;line-height:1}.cat-close:hover{color:#fff}
+.target{transition:left .18s ease,top .18s ease,transform .15s ease}.target:hover{transform:scale(1.04)}
