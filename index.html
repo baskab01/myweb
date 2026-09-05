@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>BAS PRANK LAB</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <header class="topbar">
+      <button class="brand" onclick="showHome()">BAS <span>PRANK LAB</span></button>
+      <div class="tag">10 PRANKS</div>
+    </header>
+
+    <main>
+      <section id="home" class="page active">
+        <div class="hero">
+          <div class="eyebrow">WELCOME TO THE LAB</div>
+          <h1>ห้องทดลองสำหรับคนชอบปั่น</h1>
+          <p>เลือกเครื่องมือ แล้วดูว่าเพื่อนจะหลงกลได้นานแค่ไหน</p>
+        </div>
+        <div id="cards" class="grid"></div>
+        <p class="footer-note">เว็บจำลองเพื่อความบันเทิง • ไม่มีการเข้าถึงบัญชีหรือข้อมูลจริง</p>
+      </section>
+
+      <section id="game" class="page">
+        <button class="back" onclick="showHome()">← กลับหน้าแรก</button>
+        <div id="gameContent"></div>
+      </section>
+    </main>
+  </div>
+
+  <div id="toast"></div>
+  <script src="script.js"></script>
+</body>
+</html>
