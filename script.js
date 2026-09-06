@@ -1,7 +1,120 @@
+
+/* ===== BAS LAB MUSIC PLAYER ===== */
+(() => {
+  const music = document.createElement('audio');
+  music.id = 'basBackgroundMusic';
+  music.preload = 'auto';
+  music.loop = false;
+  music.volume = Number(localStorage.getItem('basMusicVolume') ?? 35) / 100;
+  document.body.appendChild(music);
+
+  const tracks = Array.from({length: 10}, (_, i) => `./sound/song${i+1}.mp3`);
+  let current = Number(localStorage.getItem('basMusicTrack') ?? 0);
+  let started = false;
+  let pausedByUser = false;
+
+  const btn = document.getElementById('basMusicSettingsBtn');
+  const panel = document.getElementById('basMusicSettings');
+  const select = document.getElementById('basMusicTrack');
+  const volume = document.getElementById('basMusicVolume');
+  const volText = document.getElementById('basMusicVolText');
+  const toggle = document.getElementById('basMusicToggle');
+
+  const available = tracks.map((src, i) => ({src, i}));
+  select.innerHTML = available.map(x => `<option value="${x.i}">เพลง ${x.i+1}</option>`).join('');
+  select.value = String(Math.max(0, Math.min(9, current)));
+
+  function updateUI() {
+    const v = Math.round(music.volume * 100);
+    volume.value = v;
+    volText.textContent = v + '%';
+    toggle.textContent = music.paused ? '▶️ เล่นเพลง' : '⏸️ หยุดเพลง';
+  }
+
+  function loadTrack(index, autoplay = false) {
+    current = (index + tracks.length) % tracks.length;
+    localStorage.setItem('basMusicTrack', current);
+    music.src = tracks[current];
+    select.value = String(current);
+    if (autoplay) {
+      music.play().then(() => {
+        started = true; pausedByUser = false; updateUI();
+      }).catch(() => {});
+    }
+  }
+
+  function playFromUserGesture() {
+    if (pausedByUser) return;
+    if (!started || music.paused) {
+      music.play().then(() => { started = true; updateUI(); }).catch(() => {});
+    }
+  }
+
+  music.addEventListener('ended', () => {
+    loadTrack(current + 1, true);
+  });
+
+  btn.addEventListener('click', () => panel.classList.toggle('show'));
+
+  volume.addEventListener('input', () => {
+    music.volume = Number(volume.value) / 100;
+    localStorage.setItem('basMusicVolume', volume.value);
+    updateUI();
+  });
+
+  select.addEventListener('change', () => {
+    loadTrack(Number(select.value), true);
+  });
+
+  toggle.addEventListener('click', () => {
+    if (music.paused) {
+      pausedByUser = false;
+      music.play().then(() => { started = true; updateUI(); }).catch(() => {});
+    } else {
+      pausedByUser = true;
+      music.pause();
+      updateUI();
+    }
+  });
+
+  // Browsers normally block audible autoplay. Start on the first user interaction.
+  ['pointerdown', 'keydown', 'touchstart'].forEach(evt => {
+    document.addEventListener(evt, playFromUserGesture, {once: false, passive: true});
+  });
+
+  loadTrack(current, false);
+  updateUI();
+})();
+
 (() => {
 'use strict';
 let lieStep=0,reward=0,aiStep=0,aiScore=0,dontClicks=0,targetScore=0,targetTime=15,targetTimer=null,hackTimer=null,targetMoveTimer=null,clickRounds=0,ghostKeyHandler=null,ghostRAF=null,ghostState=null;
 const $=s=>document.querySelector(s), gameContent=()=>$('#gameContent'), box=h=>`<div class="gamebox">${h}</div>`;
+const MUSIC_FILES = Array.from({length:10},(_,i)=>`./music/song${i+1}.mp3`);
+let bgMusic=null,bgIndex=0,bgStarted=false;
+function initBackgroundMusic(){
+  bgMusic=new Audio(); bgMusic.volume=0.35; bgMusic.preload='auto';
+  const next=()=>{
+    if(!bgMusic)return;
+    let tries=0;
+    const loadNext=()=>{
+      if(tries++>=MUSIC_FILES.length){bgMusic.removeAttribute('src');return;}
+      bgMusic.src=MUSIC_FILES[bgIndex%MUSIC_FILES.length]; bgIndex++;
+      bgMusic.load();
+      bgMusic.play().then(()=>{bgStarted=true}).catch(()=>{});
+    };
+    loadNext();
+  };
+  bgMusic.addEventListener('ended',next);
+  bgMusic.addEventListener('error',next);
+  next();
+  const unlock=()=>{
+    if(!bgMusic||bgStarted)return;
+    bgMusic.play().then(()=>{bgStarted=true}).catch(()=>{});
+  };
+  ['pointerdown','keydown','touchstart'].forEach(ev=>document.addEventListener(ev,unlock,{once:true,passive:true}));
+}
+
 const npcBehaviors=[
 'เปิดเว็บแล้วลืมว่ามาทำอะไร','กดปุ่มซ้ำเพราะคิดว่าเว็บค้าง','เห็นคำว่า “ห้ามกด” แล้วอยากกด','เลื่อนหน้าจอทั้งที่ไม่มีอะไรให้ดู','เปิดตู้เย็นแล้วปิดโดยไม่ได้หยิบอะไร','ตอบว่า “เดี๋ยวทำ” แล้วหายไป','ค้นหาของที่ถืออยู่ในมือ','ตั้งปลุกแล้วกดเลื่อน 7 รอบ','เข้า YouTube เพื่อดูคลิปเดียว','อ่านแชตแล้วตอบในใจแทนการพิมพ์','กดรีเฟรชเพื่อหวังให้ชีวิตดีขึ้น','เปิดหลายแท็บจนจำไม่ได้ว่าแท็บไหนสำคัญ','พิมพ์รหัสผ่านผิดแล้วโทษคีย์บอร์ด','เห็นโหลด 99% แล้วจ้องมัน','กดปุ่มย้อนกลับทั้งที่ยังอยู่หน้าเดิม','ชาร์จมือถือทั้งที่แบต 94%','ตั้งใจนอนเร็วแต่เปิดมือถือก่อน','พูดว่า “5 นาที” แล้วผ่านไปหนึ่งชั่วโมง','กดข้ามโฆษณาเร็วเกินไปจนกดไม่ได้','ค้นหาวิธีทำสิ่งที่กำลังทำอยู่','เปิดเพลงแล้วลืมว่ากำลังหาเพลงอะไร','อ่านแจ้งเตือนแล้วลืมเนื้อหา','กดไลก์โพสต์เก่าโดยไม่ตั้งใจ','ถ่ายรูปอาหารก่อนกิน','ดูนาฬิกาซ้ำหลังจากดูไปเมื่อกี้','เปิดแอปแล้วปิดทันที','พิมพ์ “555” ทั้งที่ไม่ได้ขำ','กดปุ่มเสียงเพื่อเช็กว่าเปิดเสียงอยู่ไหม','เลื่อนฟีดจนเจอโพสต์เดิม','เดินเข้าห้องแล้วลืมว่ามาทำอะไร','เปิดแอร์แล้วห่มผ้า','บอกว่าไม่หิวแล้วแอบหาของกิน','เช็กมือถือทั้งที่ไม่มีแจ้งเตือน','กด “ยอมรับ” โดยไม่อ่าน','กดสุ่มเพราะไม่รู้จะเลือกอะไร','เห็นคำว่า UPDATE แล้วกดทันที','จำรหัสได้แต่จำไม่ได้ว่าบัญชีไหน','เปิดกล้องหน้าเพื่อเช็กหน้าตัวเอง','ส่งข้อความแล้วอ่านซ้ำ 3 รอบ','พิมพ์ผิดแล้วส่งก่อนแก้','กดปิดแจ้งเตือนแล้วเปิดใหม่','บอกว่า “ครั้งสุดท้าย” หลายครั้ง','ดูแบตทุก 2 นาที','เข้าเกมเพื่อเล่น 10 นาทีแล้วหายไปทั้งคืน','ค้นหาคำตอบทั้งที่รู้คำตอบอยู่แล้ว','กดปุ่มสุ่มเพราะอยากรู้ผล','อ่านหน้านี้มาถึงตรงนี้','ใช้เมาส์ลากไปรอบ ๆ โดยไม่มีเหตุผล','ทำทุกอย่างก่อนถึงจะยอมทำงานจริง','คลิกปุ่มเพราะมันอยู่ตรงหน้า'
 ];
@@ -29,7 +142,7 @@ const games={
 function showLie(){const q=$('#lieQ');if(lieStep>=3){const n=Math.floor(Math.random()*100)+1;const text=lieConclusions[Math.floor(Math.random()*lieConclusions.length)];q.innerHTML=`<div class="center"><div class="big">🔍</div><div class="result">ตรวจพบความน่าสงสัย ${n}%</div><p class="sub">${n<=10?'ไม่มีอะไรให้สงสัย': 'คุณเคยโกหก'}</p><p class="sub">${text}</p><button id="lieAgain" class="primary">เล่นอีกครั้ง</button></div>`;$('#lieAgain').addEventListener('click',()=>openGame('lie'));return}q.innerHTML=`<h3>${['คุณเคยบอกว่า “กำลังจะนอน” แล้วเล่นมือถืออีก 2 ชั่วโมงไหม?','คุณเคยเปิดตู้เย็นทั้งที่รู้ว่าไม่มีอะไรไหม?','คุณเคยพูดว่า “แป๊บเดียว” แล้วหายไปเป็นชั่วโมงไหม?'][lieStep]}</h3><div class="answers"><button class="secondary lieAns">ใช่</button><button class="secondary lieAns">ไม่</button></div>`;q.querySelectorAll('.lieAns').forEach(b=>b.addEventListener('click',()=>{lieStep++;showLie()}))}
 function moneyStep(n){const g=gameContent();if(n===1){g.innerHTML=box(`<div class="center"><h2>🔐 ยืนยันตัวตน</h2><p class="sub">ระบบต้องการยืนยันว่าคุณเป็นมนุษย์</p><div class="big">🤖</div><button id="moneyHuman" class="primary">ฉันไม่ใช่บอท</button></div>`);$('#moneyHuman').addEventListener('click',()=>moneyStep(2))}else if(n===2){g.innerHTML=box(`<div class="center"><h2>⏳ กำลังโอนเงิน</h2><div class="progress"><div id="moneyBar" class="bar"></div></div><p id="moneyPct">0%</p></div>`);let p=0;const t=setInterval(()=>{p+=10;if($('#moneyBar'))$('#moneyBar').style.width=p+'%';if($('#moneyPct'))$('#moneyPct').textContent=p+'%';if(p>=100){clearInterval(t);setTimeout(()=>moneyStep(3),300)}},150)}else{g.innerHTML=box(`<div class="center"><h2>💸 เสร็จสิ้น!</h2><div class="big">🗿</div><div class="result">เงินถูกส่งไปยังดาวอังคารแล้ว</div><button id="moneyAgain" class="primary">ลองใหม่</button></div>`);$('#moneyAgain').addEventListener('click',()=>openGame('money'))}}
 function runHack(){clearInterval(hackTimer);const t=$('#terminal');t.textContent='';const lines=['Initializing BAS secure shell...','Connecting to target...','Scanning firewall...','Bypassing firewall [OK]','Decrypting password...','ACCESS GRANTED','Downloading secrets...','████████████████████ 100%','Searching sensitive files...','Found: cat.jpg','Found: homework.txt','Found: snacks.txt','','MISSION COMPLETE.','สิ่งที่ได้มา: รูปแมว 1 รูป'];let i=0;hackTimer=setInterval(()=>{t.textContent+=lines[i]+'\n';t.scrollTop=t.scrollHeight;i++;if(i>=lines.length){clearInterval(hackTimer);setTimeout(showCatModal,250)}},260)}
-function showCatModal(){if($('#catModal'))$('#catModal').remove();document.body.insertAdjacentHTML('beforeend',`<div id="catModal" class="cat-modal"><div class="cat-card"><button id="catClose" class="cat-close" aria-label="ปิด">×</button><h2>🐱 MISSION COMPLETE</h2><p>สิ่งที่ได้มา: รูปแมว 1 รูป</p><img src="./cat.jpg" alt="รูปแมว" alt="รูปแมว"><button id="catDone" class="primary">ปิด</button></div></div>`);$('#catClose').addEventListener('click',closeCat);$('#catDone').addEventListener('click',closeCat)}
+function showCatModal(){if($('#catModal'))$('#catModal').remove();document.body.insertAdjacentHTML('beforeend',`<div id="catModal" class="cat-modal"><div class="cat-card"><button id="catClose" class="cat-close" aria-label="ปิด">×</button><h2>🐱 MISSION COMPLETE</h2><p>สิ่งที่ได้มา: รูปแมว 1 รูป</p><img src="./png/cat.jpg" alt="รูปแมว" alt="รูปแมว"><button id="catDone" class="primary">ปิด</button></div></div>`);$('#catClose').addEventListener('click',closeCat);$('#catDone').addEventListener('click',closeCat)}
 function closeCat(){const m=$('#catModal');if(m)m.remove()}
 function findLove(){const input=$('#name'),n=(input.value||'').trim();if(!n){input.focus();toast('กรุณาใส่ชื่อก่อน');return}const r=['แมวข้างบ้าน','คนที่อ่านข้อความแล้วไม่ตอบ','คนที่อยู่ใกล้กว่าที่คิด','ตัวคุณเอง','คนที่กำลังหาเนื้อคู่เหมือนกัน'];$('#loveOut').innerHTML=`<div class="fakecard"><b>ผลการค้นหา: ${escapeHtml(n)}</b><p>คู่ที่เข้ากันได้มากที่สุดคือ...</p><div class="result">${r[Math.floor(Math.random()*r.length)]}</div><p class="sub">ความเข้ากันได้: ${60+Math.floor(Math.random()*41)}%</p></div>`}
 function prankFriend(){const input=$('#friendName'),n=(input.value||'').trim();if(!n){input.focus();toast('กรุณาใส่ชื่อเพื่อนก่อน');return}const score=Math.floor(Math.random()*101),text=prankConclusions[Math.floor(Math.random()*prankConclusions.length)];$('#friendOut').innerHTML=`<div class="fakecard"><h3>รายงานการวิเคราะห์</h3><p>ผู้ถูกวิเคราะห์: <b>${escapeHtml(n)}</b></p><p>ระดับความปั่น: ${score}%</p><div class="meter"><div style="width:${score}%"></div></div><p class="warn">ข้อสรุป: ${text}</p></div>`}
@@ -41,10 +154,10 @@ function moveAway(dx,dy){const a=$('#arena'),t=$('#target');if(!a||!t)return;con
 function startDrift(){clearInterval(targetMoveTimer);targetMoveTimer=setInterval(()=>{const t=$('#target');if(!t||t.dataset.flying==='1'||targetTime<=0){clearInterval(targetMoveTimer);return}moveAway(Math.random()-.5,Math.random()-.5)},700+Math.random()*700)}
 function targetHit(e){e.stopPropagation();const t=e.currentTarget;if(t.dataset.flying==='1')return;targetScore++;if($('#sc'))$('#sc').textContent=targetScore;if(targetScore%3===2){flyOut()}else{moveTarget()}}function flyOut(){const t=$('#target');if(!t)return;t.dataset.flying='1';clearInterval(targetMoveTimer);const r=t.getBoundingClientRect();t.style.position='fixed';t.style.left=r.left+'px';t.style.top=r.top+'px';t.style.zIndex='99999';t.style.transition='left .7s ease-out,top .7s ease-out,opacity .7s';requestAnimationFrame(()=>{t.style.left='120vw';t.style.top='-30vh';t.style.opacity='0'});setTimeout(()=>{if(targetTime<=0)return;const a=$('#arena');if(!a)return;const pos=safePosition(a);t.style.transition='none';t.style.opacity='0';t.style.position='absolute';t.style.left=pos.x+'px';t.style.top=pos.y+'px';t.style.zIndex='';a.appendChild(t);requestAnimationFrame(()=>{t.style.transition='opacity .35s';t.style.opacity='1';t.dataset.flying='0';startDrift()})},3000)}
 function stopGhostGame(){if(ghostRAF){cancelAnimationFrame(ghostRAF);ghostRAF=null}if(ghostKeyHandler){document.removeEventListener('keydown',ghostKeyHandler);ghostKeyHandler=null}ghostState=null}
-function startGhostGame(){stopGhostGame();const mobile='ontouchstart' in window||navigator.maxTouchPoints>0||window.matchMedia('(pointer:coarse)').matches;gameContent().innerHTML=box(`<div class="ghost-game"><h2>👻 มินิเกม</h2><p class="sub">กระโดดจากพื้นหนึ่งไปอีกพื้นหนึ่ง อย่าตกลงไปข้างล่าง...</p><div class="ghost-hud"><span>กระโดด: <b id="ghostJumps">0</b></span><span>ระยะทาง: <b id="ghostDistance">0</b> m</span></div><div id="ghostArena" class="ghost-arena"><div id="ghostWorld" class="ghost-world"><div id="ghostPlayer" class="ghost-player"></div></div><div id="ghostStartOverlay" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.72);z-index:999;pointer-events:auto"><div class="center"><div style="font-size:42px">👻</div><h3 style="margin:8px 0">กดเพื่อเริ่มเกม</h3><p class="sub" style="font-size:18px">${mobile?'กดปุ่ม JUMP':'กด SPACEBAR'}</p></div></div></div><button id="ghostJump" class="primary ghost-jump" type="button">JUMP</button><div class="ghost-hint">${mobile?'กดปุ่ม JUMP เพื่อเริ่มและกระโดด':'กด Spacebar เพื่อเริ่มและกระโดด'}</div><div id="ghostStatus" class="center result" style="font-size:18px">รอเริ่มเกม...</div></div>`);const arena=$('#ghostArena'),world=$('#ghostWorld'),player=$('#ghostPlayer'),jumpBtn=$('#ghostJump');ghostState={arena,world,player,x:65,y:238,vy:0,vx:2.7,grounded:true,jumps:0,distance:0,platforms:[],active:false,started:false,lastY:238,audio:new Audio('./scream.mp3')};ghostState.audio.preload='auto';ghostState.audio.load();let x=15;ghostState.platforms.push({x,y:280,w:180,missing:false});for(let i=1;i<30;i++){x+=125+Math.random()*75;const prev=ghostState.platforms[i-1].y;let y=prev+(Math.random()*100-50);y=Math.max(165,Math.min(285,y));ghostState.platforms.push({x,y,w:105+Math.random()*65,missing:false})}ghostState.platforms.forEach((pl,i)=>{const el=document.createElement('div');el.className='ghost-platform';el.style.left=pl.x+'px';el.style.top=pl.y+'px';el.style.width=pl.w+'px';el.dataset.index=i;world.insertBefore(el,player);pl.el=el});const jump=()=>{const g=ghostState;if(!g||!g.active||!g.grounded)return;g.vy=-11;g.grounded=false;g.jumps++;$('#ghostJumps').textContent=g.jumps;if(g.jumps>=5&&Math.random()<0.30){const next=g.platforms.find(pl=>!pl.missing&&pl.x>g.x+35);if(next){next.missing=true;next.el.style.opacity='0';next.el.style.pointerEvents='none'}}};const start=()=>{const g=ghostState;if(!g||g.started)return;g.started=true;g.active=true;g.audio.volume=1;g.audio.currentTime=0;g.audio.play().then(()=>{g.audio.pause();g.audio.currentTime=0}).catch(()=>{});const overlay=$('#ghostStartOverlay');if(overlay)overlay.remove();if($('#ghostStatus'))$('#ghostStatus').textContent='เริ่มแล้ว!';jump();ghostRAF=requestAnimationFrame(loop)};ghostKeyHandler=e=>{if(e.code!=='Space')return;e.preventDefault();if(!ghostState?.started)start();else jump()};document.addEventListener('keydown',ghostKeyHandler);jumpBtn.addEventListener('click',()=>{if(!ghostState?.started)start();else jump()});let touchStart=0;arena.addEventListener('touchstart',()=>{touchStart=Date.now()},{passive:true});arena.addEventListener('touchend',()=>{if(Date.now()-touchStart<500){if(!ghostState?.started)start();else jump()}},{passive:true});function loop(){const g=ghostState;if(!g||!g.active)return;g.lastY=g.y;g.x+=g.vx;g.vy+=0.52;g.y+=g.vy;if(g.vy>=0){for(const pl of g.platforms){if(pl.missing)continue;const wasAbove=g.lastY+42<=pl.y,nowCross=g.y+42>=pl.y,overlap=g.x+30>pl.x&&g.x<pl.x+pl.w;if(wasAbove&&nowCross&&overlap){g.y=pl.y-42;g.vy=0;g.grounded=true;break}}}player.style.left=g.x+'px';player.style.top=g.y+'px';const camera=Math.max(0,g.x-170);world.style.transform=`translateX(${-camera}px)`;g.distance=Math.floor(g.x/10);$('#ghostDistance').textContent=g.distance;if(g.y>390){g.active=false;if($('#ghostStatus'))$('#ghostStatus').textContent='ตกแมพ...';setTimeout(showGhostJumpscare,180);return}ghostRAF=requestAnimationFrame(loop)}}
-function showGhostJumpscare(){const old=ghostState;const audio=old?.audio;stopGhostGame();if($('#ghostScare'))$('#ghostScare').remove();document.body.insertAdjacentHTML('beforeend',`<div id="ghostScare" class="jumpscare"><video id="ghostVideo" src="./ghost_jumpscare.mp4" autoplay muted playsinline></video><button id="ghostRetry" class="primary ghost-retry">เล่นอีกครั้ง</button></div>`);const v=$('#ghostVideo');const playScare=()=>{v.currentTime=0;v.play().catch(()=>{});if(audio){audio.currentTime=0;audio.volume=1;audio.play().catch(()=>{})}};if(v.readyState>=2)playScare();else v.addEventListener('loadeddata',playScare,{once:true});$('#ghostRetry').addEventListener('click',()=>{$('#ghostScare')?.remove();openGame('ghost')})}
+function startGhostGame(){stopGhostGame();const mobile='ontouchstart' in window||navigator.maxTouchPoints>0||window.matchMedia('(pointer:coarse)').matches;gameContent().innerHTML=box(`<div class="ghost-game"><h2>👻 มินิเกม</h2><p class="sub">กระโดดจากพื้นหนึ่งไปอีกพื้นหนึ่ง อย่าตกลงไปข้างล่าง...</p><div class="ghost-hud"><span>กระโดด: <b id="ghostJumps">0</b></span><span>ระยะทาง: <b id="ghostDistance">0</b> m</span></div><div id="ghostArena" class="ghost-arena"><div id="ghostWorld" class="ghost-world"><div id="ghostPlayer" class="ghost-player"></div></div><div id="ghostStartOverlay" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.72);z-index:999;pointer-events:auto"><div class="center"><div style="font-size:42px">👻</div><h3 style="margin:8px 0">กดเพื่อเริ่มเกม</h3><p class="sub" style="font-size:18px">${mobile?'กดปุ่ม JUMP':'กด SPACEBAR'}</p></div></div></div><button id="ghostJump" class="primary ghost-jump" type="button">JUMP</button><div class="ghost-hint">${mobile?'กดปุ่ม JUMP เพื่อเริ่มและกระโดด':'กด Spacebar เพื่อเริ่มและกระโดด'}</div><div id="ghostStatus" class="center result" style="font-size:18px">รอเริ่มเกม...</div></div>`);const arena=$('#ghostArena'),world=$('#ghostWorld'),player=$('#ghostPlayer'),jumpBtn=$('#ghostJump');ghostState={arena,world,player,x:65,y:238,vy:0,vx:2.7,grounded:true,jumps:0,distance:0,platforms:[],active:false,started:false,lastY:238,audio:new Audio('./scream/scream.mp3')};ghostState.audio.preload='auto';ghostState.audio.load();let x=15;ghostState.platforms.push({x,y:280,w:180,missing:false});for(let i=1;i<30;i++){x+=125+Math.random()*75;const prev=ghostState.platforms[i-1].y;let y=prev+(Math.random()*100-50);y=Math.max(165,Math.min(285,y));ghostState.platforms.push({x,y,w:105+Math.random()*65,missing:false})}ghostState.platforms.forEach((pl,i)=>{const el=document.createElement('div');el.className='ghost-platform';el.style.left=pl.x+'px';el.style.top=pl.y+'px';el.style.width=pl.w+'px';el.dataset.index=i;world.insertBefore(el,player);pl.el=el});const jump=()=>{const g=ghostState;if(!g||!g.active||!g.grounded)return;g.vy=-11;g.grounded=false;g.jumps++;$('#ghostJumps').textContent=g.jumps;if(g.jumps>=5&&Math.random()<0.30){const next=g.platforms.find(pl=>!pl.missing&&pl.x>g.x+35);if(next){next.missing=true;next.el.style.opacity='0';next.el.style.pointerEvents='none'}}};const start=()=>{const g=ghostState;if(!g||g.started)return;g.started=true;g.active=true;g.audio.volume=1;g.audio.currentTime=0;g.audio.play().then(()=>{g.audio.pause();g.audio.currentTime=0}).catch(()=>{});const overlay=$('#ghostStartOverlay');if(overlay)overlay.remove();if($('#ghostStatus'))$('#ghostStatus').textContent='เริ่มแล้ว!';jump();ghostRAF=requestAnimationFrame(loop)};ghostKeyHandler=e=>{if(e.code!=='Space')return;e.preventDefault();if(!ghostState?.started)start();else jump()};document.addEventListener('keydown',ghostKeyHandler);jumpBtn.addEventListener('click',()=>{if(!ghostState?.started)start();else jump()});let touchStart=0;arena.addEventListener('touchstart',()=>{touchStart=Date.now()},{passive:true});arena.addEventListener('touchend',()=>{if(Date.now()-touchStart<500){if(!ghostState?.started)start();else jump()}},{passive:true});function loop(){const g=ghostState;if(!g||!g.active)return;g.lastY=g.y;g.x+=g.vx;g.vy+=0.52;g.y+=g.vy;if(g.vy>=0){for(const pl of g.platforms){if(pl.missing)continue;const wasAbove=g.lastY+42<=pl.y,nowCross=g.y+42>=pl.y,overlap=g.x+30>pl.x&&g.x<pl.x+pl.w;if(wasAbove&&nowCross&&overlap){g.y=pl.y-42;g.vy=0;g.grounded=true;break}}}player.style.left=g.x+'px';player.style.top=g.y+'px';const camera=Math.max(0,g.x-170);world.style.transform=`translateX(${-camera}px)`;g.distance=Math.floor(g.x/10);$('#ghostDistance').textContent=g.distance;if(g.y>390){g.active=false;if($('#ghostStatus'))$('#ghostStatus').textContent='ตกแมพ...';setTimeout(showGhostJumpscare,180);return}ghostRAF=requestAnimationFrame(loop)}}
+function showGhostJumpscare(){const old=ghostState;const audio=old?.audio;stopGhostGame();if($('#ghostScare'))$('#ghostScare').remove();document.body.insertAdjacentHTML('beforeend',`<div id="ghostScare" class="jumpscare"><video id="ghostVideo" src="./video/ghost_jumpscare.mp4" autoplay muted playsinline></video><button id="ghostRetry" class="primary ghost-retry">เล่นอีกครั้ง</button></div>`);const v=$('#ghostVideo');const playScare=()=>{v.currentTime=0;v.play().catch(()=>{});if(audio){audio.currentTime=0;audio.volume=1;audio.play().catch(()=>{})}};if(v.readyState>=2)playScare();else v.addEventListener('loadeddata',playScare,{once:true});$('#ghostRetry').addEventListener('click',()=>{$('#ghostScare')?.remove();openGame('ghost')})}
 
 function toast(t){const x=$('#toast');x.textContent=t;x.classList.add('show');setTimeout(()=>x.classList.remove('show'),1800)}
 function escapeHtml(s){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
-document.addEventListener('DOMContentLoaded',()=>document.body.dataset.prankLabReady='true');
+document.addEventListener('DOMContentLoaded',()=>{document.body.dataset.prankLabReady='true';initBackgroundMusic()});
 })();
